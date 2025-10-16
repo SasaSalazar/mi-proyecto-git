@@ -1,0 +1,41 @@
+from flask import Flask, request, jsonify
+import sqlite3
+
+app = Flask(__name__)
+
+def conectar():
+    conn = sqlite3.connect("usuarios.db")
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# Crear tabla
+with conectar() as conn:
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            codigo INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            correo TEXT NOT NULL,
+            telefono TEXT,
+            carrera TEXT,
+            materia TEXT
+        )
+    """)
+
+# ---- RUTAS CRUD ----
+@app.route('/insertar', methods=['POST'])
+def insertar():
+    data = request.json
+    campos = ['nombre', 'correo', 'telefono', 'carrera', 'materia']
+    if not data.get('nombre') or not data.get('correo'):
+        return jsonify({'error': 'Nombre y correo son obligatorios.'}), 400
+    with conectar() as conn:
+        conn.execute("""INSERT INTO usuarios (nombre, correo, telefono, carrera, materia)
+                        VALUES (?, ?, ?, ?, ?)""",
+                        tuple(data.get(campo, '') for campo in campos))    return jsonify({'mensaje': 'Usuario agregado correctamente.'}), 201
+
+@app.route('/usuarios', methods=['GET'])
+def listar():
+    with conectar() as conn:
+
+        cur = conn.execute("SELECT * FROM usuarios")
+    
